@@ -4,6 +4,8 @@ const cors = require('cors');
 const admin = require("firebase-admin");
 require('dotenv').config()
 const { MongoClient } = require('mongodb');
+const fileUpload = require('express-fileupload');
+
 
 
 const port =process.env.PORT || 5000
@@ -19,6 +21,7 @@ admin.initializeApp({
 
 app.use(cors());
 app.use(express.json())
+app.use(fileUpload());
 
 //mongodb start
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ojutr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
@@ -32,6 +35,7 @@ async function verifyToken(req, res, next) {
     try{
       const decodedUser = await admin.auth().verifyIdToken(token);
       req.decodedEmail = decodedUser.email;
+
     }
     catch{
 
@@ -46,7 +50,8 @@ async function run() {
     const database = client.db("volunteer_website");
     const appointmentCollection = database.collection("appointments");
   const usersCollection = database.collection('users')
-    //  console.log('database connected successfully');
+  const denationPeopleCollection = database.collection('people');
+  //  console.log('database connected successfully');
    
   app.post('/appointments', async(req, res)=>{
     const appointment = req.body;
@@ -54,6 +59,31 @@ async function run() {
     console.log(result);
     res.json(result)
   })
+  // img add
+  app.get('/people', async(req, res)=>{
+    const cursor = denationPeopleCollection.find({});
+    const people = await cursor.toArray();
+    res.json(people)
+  })
+//img add
+app.post('/people', async(req, res) =>{
+  const name = req.body.name;
+  const email = req.body.email;
+  const pic = req.files.image;
+  const picData = pic.data;
+  const encodedPic = picData.toString('base64');
+  const imageBuffer = Buffer.from(encodedPic, 'base64');
+const people = {
+  name,
+  email,
+  image: imageBuffer
+}
+// console.log('body', req.body);
+// console.log('files', req.files);
+const result = await denationPeopleCollection.insertOne(people);
+res.json(result)
+})
+
   app.get('/users/:email', async(req, res)=>{
     const email = req.params.email;
     const query = {email: email};
