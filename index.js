@@ -4,6 +4,9 @@ const cors = require('cors');
 const admin = require("firebase-admin");
 require('dotenv').config()
 const { MongoClient } = require('mongodb');
+app.use(cors());
+app.use(express.json())
+
 const fileUpload = require('express-fileupload');
 
 
@@ -19,8 +22,7 @@ admin.initializeApp({
 });
 
 
-app.use(cors());
-app.use(express.json())
+
 app.use(fileUpload());
 
 //mongodb start
@@ -53,13 +55,23 @@ async function run() {
   const denationPeopleCollection = database.collection('people');
   //  console.log('database connected successfully');
    
+app.get('/appointments', async(req, res)=>{
+  const email = req.query.email;
+  const query = {email: email}
+  console.log(query)
+  const cursor = appointmentCollection.find(query);
+  const appointments = await cursor.toArray();
+  res.json(appointments)
+})
+
   app.post('/appointments', async(req, res)=>{
     const appointment = req.body;
     const result = await appointmentCollection.insertOne(appointment)
-    console.log(result);
+    // console.log(appointment);
+    // res.json({message: 'hello'})
     res.json(result)
   })
-  // img add
+  // img add                                            
   app.get('/people', async(req, res)=>{
     const cursor = denationPeopleCollection.find({});
     const people = await cursor.toArray();
